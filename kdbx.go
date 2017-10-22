@@ -1,5 +1,9 @@
 package kdbx
 
+import (
+	"encoding/binary"
+)
+
 // KDBX defines the main library data structure.
 //
 // KeePass Password Safe is a free and open-source password manager primarily
@@ -29,6 +33,14 @@ package kdbx
 // 00c0:  74 ce 72 43 95 6d aa 0e  19 25 e4 9b c8 94 e7 bd  |t.rC.m...%......|
 // 00d0:  0a 04 00 02 00 00 00 00  04 00 0d 0a 0d 0a        |..............|
 type KDBX struct {
+	headers []Header
+}
+
+// Header defines the KDBX file header.
+type Header struct {
+	id     uint8
+	length uint16
+	data   []byte
 }
 
 func New() *KDBX {
