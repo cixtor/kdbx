@@ -5,3 +5,7 @@
 > — https://en.wikipedia.org/wiki/KeePass
 
 ![fileformat](screenshot.png)
+
+ID     | DataType | Header Name           | Description
+-------|----------|-----------------------|------------
+`0x00` | `[]byte` | `EndHeader`           | defines the end limit for the headers block

@@ -46,3 +46,8 @@ type Header struct {
 func New() *KDBX {
 	return &KDBX{}
 }
+
+// EndHeader defines the end limit for the headers block.
+func (k *KDBX) EndHeader() []byte {
+	return k.headers[0x00].data
+}
