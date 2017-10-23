@@ -51,3 +51,8 @@ func New() *KDBX {
 func (k *KDBX) EndHeader() []byte {
 	return k.headers[0x00].data
 }
+
+// Comment is current ignored by KeePass and alternate apps.
+func (k *KDBX) Comment() []byte {
+	return k.headers[0x01].data
+}
