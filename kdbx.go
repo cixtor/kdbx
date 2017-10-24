@@ -56,3 +56,10 @@ func (k *KDBX) EndHeader() []byte {
 func (k *KDBX) Comment() []byte {
 	return k.headers[0x01].data
 }
+
+// CipherID represents the UUID of the cipher algorithm.
+//
+// The default cipher is AES-CBC with PKCS7 padding.
+func (k *KDBX) CipherID() []byte {
+	return k.headers[0x02].data
+}
