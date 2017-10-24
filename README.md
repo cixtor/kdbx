@@ -11,3 +11,4 @@ ID     | DataType | Header Name           | Description
 `0x00` | `[]byte` | `EndHeader`           | defines the end limit for the headers block
 `0x01` | `[]byte` | `Comment`             | is current ignored by KeePass and alternate apps
 `0x02` | `[]byte` | `CipherID`            | represents the UUID of the cipher algorithm
+`0x03` | `uint32` | `CompressionFlags`    | determines if the database is compressed or not

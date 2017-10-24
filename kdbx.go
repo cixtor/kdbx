@@ -63,3 +63,13 @@ func (k *KDBX) Comment() []byte {
 func (k *KDBX) CipherID() []byte {
 	return k.headers[0x02].data
 }
+
+// CompressionFlags determines if the database is compressed or not.
+//
+// For now, the compression algorithm seems to be GZip, if this header is set
+// to `0x01` the payload will need to be decompressed before it can be read.
+//
+// Not compressed: `[]byte{0x00, 0x00, 0x00, 0x00}`.
+func (k *KDBX) CompressionFlags() uint32 {
+	return binary.LittleEndian.Uint32(k.headers[0x03].data)
+}
