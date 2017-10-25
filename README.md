@@ -13,3 +13,4 @@ ID     | DataType | Header Name           | Description
 `0x02` | `[]byte` | `CipherID`            | represents the UUID of the cipher algorithm
 `0x03` | `uint32` | `CompressionFlags`    | determines if the database is compressed or not
 `0x04` | `[]byte` | `MasterSeed`          | salt to concatenate to the master key
+`0x05` | `[]byte` | `TransformSeed`       | seed for AES.Encrypt to generate the master key

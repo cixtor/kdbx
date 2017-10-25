@@ -78,3 +78,11 @@ func (k *KDBX) CompressionFlags() uint32 {
 func (k *KDBX) MasterSeed() []byte {
 	return k.headers[0x04].data
 }
+
+// TransformSeed seed for AES.Encrypt to generate the master key.
+//
+// By default, KeePass writes 32 bytes of transform seed.
+// Any length is accepted when the key is read from a file.
+func (k *KDBX) TransformSeed() []byte {
+	return k.headers[0x05].data
+}
