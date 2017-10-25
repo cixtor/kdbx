@@ -73,3 +73,8 @@ func (k *KDBX) CipherID() []byte {
 func (k *KDBX) CompressionFlags() uint32 {
 	return binary.LittleEndian.Uint32(k.headers[0x03].data)
 }
+
+// MasterSeed salt to concatenate to the master key.
+func (k *KDBX) MasterSeed() []byte {
+	return k.headers[0x04].data
+}
