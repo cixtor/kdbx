@@ -86,3 +86,8 @@ func (k *KDBX) MasterSeed() []byte {
 func (k *KDBX) TransformSeed() []byte {
 	return k.headers[0x05].data
 }
+
+// TransformRounds number of rounds to compute the master key.
+func (k *KDBX) TransformRounds() uint64 {
+	return binary.LittleEndian.Uint64(k.headers[0x06].data)
+}
