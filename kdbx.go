@@ -91,3 +91,19 @@ func (k *KDBX) TransformSeed() []byte {
 func (k *KDBX) TransformRounds() uint64 {
 	return binary.LittleEndian.Uint64(k.headers[0x06].data)
 }
+
+// EncryptionIV defines the initialization vector of the cipher.
+//
+// KeePass always writes 16 bytes of IV, but the length is not checked when
+// reading a file. An exception may occur in the encryption engine if the
+// database contains the wrong IV length.
+//
+// An initialization vector (IV) or starting variable (SV) is a fixed-size
+// input to a cryptographic primitive that is typically required to be random
+// or pseudorandom. Randomization is crucial for encryption schemes to achieve
+// semantic security, a property whereby repeated usage of the scheme under
+// the same key does not allow an attacker to infer relationships between
+// segments of the encrypted message.
+func (k *KDBX) EncryptionIV() []byte {
+	return k.headers[0x07].data
+}

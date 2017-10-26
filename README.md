@@ -15,3 +15,4 @@ ID     | DataType | Header Name           | Description
 `0x04` | `[]byte` | `MasterSeed`          | salt to concatenate to the master key
 `0x05` | `[]byte` | `TransformSeed`       | seed for AES.Encrypt to generate the master key
 `0x06` | `uint64` | `TransformRounds`     | number of rounds to compute the master key
+`0x07` | `[]byte` | `EncryptionIV`        | defines the initialization vector of the cipher
