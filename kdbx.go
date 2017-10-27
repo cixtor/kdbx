@@ -107,3 +107,8 @@ func (k *KDBX) TransformRounds() uint64 {
 func (k *KDBX) EncryptionIV() []byte {
 	return k.headers[0x07].data
 }
+
+// ProtectedStreamKey used to obfuscate some fields of the decrypted file.
+func (k *KDBX) ProtectedStreamKey() []byte {
+	return k.headers[0x08].data
+}
