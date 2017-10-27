@@ -17,3 +17,4 @@ ID     | DataType | Header Name           | Description
 `0x06` | `uint64` | `TransformRounds`     | number of rounds to compute the master key
 `0x07` | `[]byte` | `EncryptionIV`        | defines the initialization vector of the cipher
 `0x08` | `[]byte` | `ProtectedStreamKey`  | used to obfuscate some fields of the decrypted file
+`0x09` | `[]byte` | `StreamStartBytes`    | portion of the decrypted database for verification

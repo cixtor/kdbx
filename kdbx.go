@@ -112,3 +112,12 @@ func (k *KDBX) EncryptionIV() []byte {
 func (k *KDBX) ProtectedStreamKey() []byte {
 	return k.headers[0x08].data
 }
+
+// StreamStartBytes portion of the decrypted database for verification.
+//
+// Besides checking if the decryption key is correct, this can also be used to
+// check if the file is corrupt before the entire stream is consumed. The data
+// should have been randomly generated when the file was saved.
+func (k *KDBX) StreamStartBytes() []byte {
+	return k.headers[0x09].data
+}
