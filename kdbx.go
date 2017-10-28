@@ -1,7 +1,10 @@
 package kdbx
 
 import (
+	"bufio"
 	"encoding/binary"
+	"log"
+	"os"
 )
 
 // KDBX defines the main library data structure.
@@ -33,7 +36,9 @@ import (
 // 00c0:  74 ce 72 43 95 6d aa 0e  19 25 e4 9b c8 94 e7 bd  |t.rC.m...%......|
 // 00d0:  0a 04 00 02 00 00 00 00  04 00 0d 0a 0d 0a        |..............|
 type KDBX struct {
-	headers []Header
+	reader   *bufio.Reader
+	filename string
+	headers  []Header
 }
 
 // Header defines the KDBX file header.
@@ -43,8 +48,13 @@ type Header struct {
 	data   []byte
 }
 
-func New() *KDBX {
-	return &KDBX{}
+// New creates and returns a new instance of KDBX.
+func New(name string) *KDBX {
+	var k KDBX
+
+	k.filename = name
+
+	return &k
 }
 
 // EndHeader defines the end limit for the headers block.
@@ -131,4 +141,23 @@ func (k *KDBX) StreamStartBytes() []byte {
 // * `2` — Salsa20
 func (k *KDBX) InnerRandomStreamID() uint32 {
 	return binary.LittleEndian.Uint32(k.headers[0x10].data)
+}
+
+// Decode reads and processes the KDBX file.
+func (k *KDBX) Decode() error {
+	file, err := os.Open(k.filename)
+
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Fatalln("kdbx.decode;", err)
+		}
+	}()
+
+	k.reader = bufio.NewReader(file)
+
+	return nil
 }
