@@ -121,3 +121,14 @@ func (k *KDBX) ProtectedStreamKey() []byte {
 func (k *KDBX) StreamStartBytes() []byte {
 	return k.headers[0x09].data
 }
+
+// InnerRandomStreamID algorithm used for individual password obfuscation.
+//
+// Inner stream encryption may be one of these types:
+//
+// * `0` — none
+// * `1` — Arc4Variant
+// * `2` — Salsa20
+func (k *KDBX) InnerRandomStreamID() uint32 {
+	return binary.LittleEndian.Uint32(k.headers[0x10].data)
+}
