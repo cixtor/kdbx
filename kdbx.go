@@ -4,11 +4,15 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"log"
 	"os"
 )
 
 var baseSig = []byte{0x03, 0xd9, 0xa2, 0x9a}
+var sndSig1 = []byte{0x65, 0xfb, 0x4b, 0xb5}
+var sndSig2 = []byte{0x66, 0xfb, 0x4b, 0xb5}
+var sndSig3 = []byte{0x67, 0xfb, 0x4b, 0xb5}
 
 // KDBX defines the main library data structure.
 //
@@ -42,6 +46,7 @@ type KDBX struct {
 	reader   *bufio.Reader
 	filename string
 	baseSign []byte
+	scndSign []byte
 	headers  []Header
 }
 
@@ -58,6 +63,7 @@ func New(name string) *KDBX {
 
 	k.filename = name
 	k.baseSign = make([]byte, 4)
+	k.scndSign = make([]byte, 4)
 
 	return &k
 }
@@ -148,6 +154,15 @@ func (k *KDBX) InnerRandomStreamID() uint32 {
 	return binary.LittleEndian.Uint32(k.headers[0x10].data)
 }
 
+// FormatVersion returns the version of the file format.
+//
+// * KeePass file format version 1.x is `0x65`
+// * KeePass file format version 2.x is `0x66`
+// * KeePass file format version 3.x is `0x67`
+func (k *KDBX) FormatVersion() byte {
+	return k.scndSign[0]
+}
+
 // Decode reads and processes the KDBX file.
 func (k *KDBX) Decode() error {
 	file, err := os.Open(k.filename)
@@ -168,19 +183,44 @@ func (k *KDBX) Decode() error {
 		return err
 	}
 
+	if err := k.decodeSecondarySignature(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (k *KDBX) decodeBaseSignature() error {
-	_, err := k.reader.Read(k.baseSign)
-
-	if err != nil {
+	if _, err := k.reader.Read(k.baseSign); err != nil {
 		return err
 	}
 
-	if !bytes.Equal(k.baseSign, baseSig) {
+	if bytes.Equal(k.baseSign, baseSig) {
+		return nil
+	}
+
+	return errors.New("invalid base signature")
+}
+
+func (k *KDBX) decodeSecondarySignature() error {
+	if _, err := k.reader.Read(k.scndSign); err != nil {
 		return err
 	}
 
-	return nil
+	if bytes.Equal(k.scndSign, sndSig1) {
+		/* KeePass file format version 1.x */
+		return nil
+	}
+
+	if bytes.Equal(k.scndSign, sndSig2) {
+		/* KeePass file format version 2.x */
+		return nil
+	}
+
+	if bytes.Equal(k.scndSign, sndSig3) {
+		/* KeePass file format version 3.x */
+		return nil
+	}
+
+	return errors.New("invalid secondary signature")
 }
