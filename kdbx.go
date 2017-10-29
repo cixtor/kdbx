@@ -2,10 +2,13 @@ package kdbx
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"log"
 	"os"
 )
+
+var baseSig = []byte{0x03, 0xd9, 0xa2, 0x9a}
 
 // KDBX defines the main library data structure.
 //
@@ -38,6 +41,7 @@ import (
 type KDBX struct {
 	reader   *bufio.Reader
 	filename string
+	baseSign []byte
 	headers  []Header
 }
 
@@ -53,6 +57,7 @@ func New(name string) *KDBX {
 	var k KDBX
 
 	k.filename = name
+	k.baseSign = make([]byte, 4)
 
 	return &k
 }
@@ -158,6 +163,24 @@ func (k *KDBX) Decode() error {
 	}()
 
 	k.reader = bufio.NewReader(file)
+
+	if err := k.decodeBaseSignature(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (k *KDBX) decodeBaseSignature() error {
+	_, err := k.reader.Read(k.baseSign)
+
+	if err != nil {
+		return err
+	}
+
+	if !bytes.Equal(k.baseSign, baseSig) {
+		return err
+	}
 
 	return nil
 }
