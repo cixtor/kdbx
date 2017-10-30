@@ -15,6 +15,7 @@ var sndSig2 = []byte{0x66, 0xfb, 0x4b, 0xb5}
 var sndSig3 = []byte{0x67, 0xfb, 0x4b, 0xb5}
 
 const minor = 1
+const major = 3
 
 // KDBX defines the main library data structure.
 //
@@ -50,6 +51,7 @@ type KDBX struct {
 	baseSign []byte
 	scndSign []byte
 	minorVer uint16
+	majorVer uint16
 	headers  []Header
 }
 
@@ -194,6 +196,10 @@ func (k *KDBX) Decode() error {
 		return err
 	}
 
+	if err := k.decodeMajorVersion(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -242,4 +248,16 @@ func (k *KDBX) decodeMinorVersion() error {
 	}
 
 	return errors.New("invalid minor version")
+}
+
+func (k *KDBX) decodeMajorVersion() error {
+	if err := binary.Read(k.reader, binary.LittleEndian, &k.majorVer); err != nil {
+		return err
+	}
+
+	if k.majorVer == major {
+		return nil
+	}
+
+	return errors.New("invalid major version")
 }
