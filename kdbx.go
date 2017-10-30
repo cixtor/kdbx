@@ -14,6 +14,8 @@ var sndSig1 = []byte{0x65, 0xfb, 0x4b, 0xb5}
 var sndSig2 = []byte{0x66, 0xfb, 0x4b, 0xb5}
 var sndSig3 = []byte{0x67, 0xfb, 0x4b, 0xb5}
 
+const minor = 1
+
 // KDBX defines the main library data structure.
 //
 // KeePass Password Safe is a free and open-source password manager primarily
@@ -47,6 +49,7 @@ type KDBX struct {
 	filename string
 	baseSign []byte
 	scndSign []byte
+	minorVer uint16
 	headers  []Header
 }
 
@@ -187,6 +190,10 @@ func (k *KDBX) Decode() error {
 		return err
 	}
 
+	if err := k.decodeMinorVersion(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -223,4 +230,16 @@ func (k *KDBX) decodeSecondarySignature() error {
 	}
 
 	return errors.New("invalid secondary signature")
+}
+
+func (k *KDBX) decodeMinorVersion() error {
+	if err := binary.Read(k.reader, binary.LittleEndian, &k.minorVer); err != nil {
+		return err
+	}
+
+	if k.minorVer == minor {
+		return nil
+	}
+
+	return errors.New("invalid minor version")
 }
