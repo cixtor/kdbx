@@ -1,3 +1,31 @@
+// KDBX File Format Library
+//
+// KeePass Password Safe is a free and open-source password manager primarily
+// for Windows. It officially supports macOS and Linux operating systems
+// through the use of Mono. Additionally, there are several unofficial ports
+// for Windows Phone, Android, iOS, and BlackBerry devices. KeePass stores
+// usernames, passwords, and other fields, including free-form notes and file
+// attachments, in an encrypted file. This file can be protected by a master
+// password, keyfile, and/or the current Windows account details. By default,
+// the KeePass database is stored on a local file system (as opposed to cloud
+// storage).
+//
+// Ref: https://en.wikipedia.org/wiki/KeePass
+//
+//   0000: 03 d9 a2 9a 67 fb 4b b5 01 00 03 00 02 10 00 31  |....g.K........1|
+//   0010: c1 f2 e6 bf 71 43 50 be 58 05 21 6a fc 5a ff 03  |....qCP.X.!j.Z..|
+//   0020: 04 00 01 00 00 00 04 20 00 e1 0e 5b a9 47 c7 dc  |....... ...[.G..|
+//   0030: 51 86 b9 fb f1 4d 6a 6d af 37 09 2d 97 e3 f1 ec  |Q....Mjm.7.-....|
+//   0040: a4 88 8b 8e 17 59 65 aa 56 07 10 00 04 38 8b 41  |.....Ye.V....8.A|
+//   0050: 2d 0d 96 e9 ed 21 6d 5e 1e 45 68 0c 05 20 00 bc  |-....!m^.Eh.. ..|
+//   0060: 42 4c 8d 6c b5 40 1d c8 9e ba 27 68 3f ef ef 55  |BL.l.@....'h?..U|
+//   0070: a5 e8 aa 77 4c 83 72 07 25 55 27 f7 f8 79 e8 06  |...wL.r.%U'..y..|
+//   0080: 08 00 60 ea 00 00 00 00 00 00 08 20 00 a2 60 65  |..`........ ..`e|
+//   0090: 6e bc 67 5b 44 15 4c d8 4d d1 eb 39 6c a0 2f 99  |n.g[D.L.M..9l./.|
+//   00a0: 66 79 5c 80 95 fa b6 95 13 5e 7e 1d 23 09 20 00  |fy\......^~.#. .|
+//   00b0: 6e 59 a8 c2 12 d6 d9 fa b5 40 9b de 9d 10 4a 2e  |nY.......@....J.|
+//   00c0: 74 ce 72 43 95 6d aa 0e 19 25 e4 9b c8 94 e7 bd  |t.rC.m...%......|
+//   00d0: 0a 04 00 02 00 00 00 00 04 00 0d 0a 0d 0a        |..............|
 package kdbx
 
 import (
@@ -17,37 +45,19 @@ var sndSig3 = []byte{0x67, 0xfb, 0x4b, 0xb5}
 const minor = 1
 const major = 3
 
+// Number of bytes for the base signature.
+const baseSigLen = 4
+
+// Number of bytes for the secondary signature.
+const sndSigXLen = 4
+
+// Number of supported header fields.
+const headersLen = 11
+
 var endHeaderUUID = uint8(0x00) /* endheader id */
 var endHeaderData = []byte{0x0d, 0x0a, 0x0d, 0x0a}
 
 // KDBX defines the main library data structure.
-//
-// KeePass Password Safe is a free and open-source password manager primarily
-// for Windows. It officially supports macOS and Linux operating systems
-// through the use of Mono. Additionally, there are several unofficial ports
-// for Windows Phone, Android, iOS, and BlackBerry devices. KeePass stores
-// usernames, passwords, and other fields, including free-form notes and file
-// attachments, in an encrypted file. This file can be protected by a master
-// password, keyfile, and/or the current Windows account details. By default,
-// the KeePass database is stored on a local file system (as opposed to cloud
-// storage).
-//
-// Ref: https://en.wikipedia.org/wiki/KeePass
-//
-// 0000:  03 d9 a2 9a 67 fb 4b b5  01 00 03 00 02 10 00 31  |....g.K........1|
-// 0010:  c1 f2 e6 bf 71 43 50 be  58 05 21 6a fc 5a ff 03  |....qCP.X.!j.Z..|
-// 0020:  04 00 01 00 00 00 04 20  00 e1 0e 5b a9 47 c7 dc  |....... ...[.G..|
-// 0030:  51 86 b9 fb f1 4d 6a 6d  af 37 09 2d 97 e3 f1 ec  |Q....Mjm.7.-....|
-// 0040:  a4 88 8b 8e 17 59 65 aa  56 07 10 00 04 38 8b 41  |.....Ye.V....8.A|
-// 0050:  2d 0d 96 e9 ed 21 6d 5e  1e 45 68 0c 05 20 00 bc  |-....!m^.Eh.. ..|
-// 0060:  42 4c 8d 6c b5 40 1d c8  9e ba 27 68 3f ef ef 55  |BL.l.@....'h?..U|
-// 0070:  a5 e8 aa 77 4c 83 72 07  25 55 27 f7 f8 79 e8 06  |...wL.r.%U'..y..|
-// 0080:  08 00 60 ea 00 00 00 00  00 00 08 20 00 a2 60 65  |..`........ ..`e|
-// 0090:  6e bc 67 5b 44 15 4c d8  4d d1 eb 39 6c a0 2f 99  |n.g[D.L.M..9l./.|
-// 00a0:  66 79 5c 80 95 fa b6 95  13 5e 7e 1d 23 09 20 00  |fy\......^~.#. .|
-// 00b0:  6e 59 a8 c2 12 d6 d9 fa  b5 40 9b de 9d 10 4a 2e  |nY.......@....J.|
-// 00c0:  74 ce 72 43 95 6d aa 0e  19 25 e4 9b c8 94 e7 bd  |t.rC.m...%......|
-// 00d0:  0a 04 00 02 00 00 00 00  04 00 0d 0a 0d 0a        |..............|
 type KDBX struct {
 	reader   *bufio.Reader
 	filename string
@@ -70,9 +80,9 @@ func New(name string) *KDBX {
 	var k KDBX
 
 	k.filename = name
-	k.baseSign = make([]byte, 4)
-	k.scndSign = make([]byte, 4)
-	k.headers = make([]Header, 10)
+	k.baseSign = make([]byte, baseSigLen)
+	k.scndSign = make([]byte, sndSigXLen)
+	k.headers = make([]Header, headersLen)
 
 	return &k
 }
@@ -97,9 +107,11 @@ func (k *KDBX) CipherID() []byte {
 // CompressionFlags determines if the database is compressed or not.
 //
 // For now, the compression algorithm seems to be GZip, if this header is set
-// to `0x01` the payload will need to be decompressed before it can be read.
+// to 0x01 the payload will need to be decompressed before it can be read.
 //
-// Not compressed: `[]byte{0x00, 0x00, 0x00, 0x00}`.
+// Not compressed header data:
+//
+//   []byte{0x00, 0x00, 0x00, 0x00}
 func (k *KDBX) CompressionFlags() uint32 {
 	return binary.LittleEndian.Uint32(k.headers[0x03].data)
 }
@@ -156,18 +168,18 @@ func (k *KDBX) StreamStartBytes() []byte {
 //
 // Inner stream encryption may be one of these types:
 //
-// * `0` — none
-// * `1` — Arc4Variant
-// * `2` — Salsa20
+// - 0x00: none
+// - 0x01: Arc4Variant
+// - 0x02: Salsa20
 func (k *KDBX) InnerRandomStreamID() uint32 {
 	return binary.LittleEndian.Uint32(k.headers[0x10].data)
 }
 
 // FormatVersion returns the version of the file format.
 //
-// * KeePass file format version 1.x is `0x65`
-// * KeePass file format version 2.x is `0x66`
-// * KeePass file format version 3.x is `0x67`
+// - KeePass file format version 1.x is `0x65`
+// - KeePass file format version 2.x is `0x66`
+// - KeePass file format version 3.x is `0x67`
 func (k *KDBX) FormatVersion() byte {
 	return k.scndSign[0]
 }
