@@ -17,6 +17,9 @@ var sndSig3 = []byte{0x67, 0xfb, 0x4b, 0xb5}
 const minor = 1
 const major = 3
 
+var endHeaderUUID = uint8(0x00) /* endheader id */
+var endHeaderData = []byte{0x0d, 0x0a, 0x0d, 0x0a}
+
 // KDBX defines the main library data structure.
 //
 // KeePass Password Safe is a free and open-source password manager primarily
@@ -69,6 +72,7 @@ func New(name string) *KDBX {
 	k.filename = name
 	k.baseSign = make([]byte, 4)
 	k.scndSign = make([]byte, 4)
+	k.headers = make([]Header, 10)
 
 	return &k
 }
@@ -200,6 +204,10 @@ func (k *KDBX) Decode() error {
 		return err
 	}
 
+	if err := k.decodeFileHeaders(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -260,4 +268,36 @@ func (k *KDBX) decodeMajorVersion() error {
 	}
 
 	return errors.New("invalid major version")
+}
+
+func (k *KDBX) decodeFileHeaders() error {
+	var h Header
+	var err error
+
+	for {
+		h = Header{} /* reset if there is anything set */
+
+		if err = binary.Read(k.reader, binary.LittleEndian, &h.id); err != nil {
+			return errors.New("kdbx.header_id;\x20" + err.Error())
+		}
+
+		if err = binary.Read(k.reader, binary.LittleEndian, &h.length); err != nil {
+			return errors.New("kdbx.header_length;\x20" + err.Error())
+		}
+
+		h.data = make([]byte, h.length)
+
+		if err = binary.Read(k.reader, binary.LittleEndian, &h.data); err != nil {
+			return errors.New("kdbx.header_data;\x20" + err.Error())
+		}
+
+		k.headers[h.id] = h /* header index should be static */
+
+		if h.id == endHeaderUUID && bytes.Equal(h.data, endHeaderData) {
+			/* stop reading headers; start reading payload content */
+			break
+		}
+	}
+
+	return nil
 }
