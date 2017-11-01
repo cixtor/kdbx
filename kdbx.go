@@ -1,4 +1,4 @@
-// KDBX File Format Library
+// Package kdbx provides basic interfaces to KDBX File Format Library.
 //
 // KeePass Password Safe is a free and open-source password manager primarily
 // for Windows. It officially supports macOS and Linux operating systems
@@ -31,6 +31,7 @@ package kdbx
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"log"
@@ -59,13 +60,14 @@ var endHeaderData = []byte{0x0d, 0x0a, 0x0d, 0x0a}
 
 // KDBX defines the main library data structure.
 type KDBX struct {
-	reader   *bufio.Reader
-	filename string
-	baseSign []byte
-	scndSign []byte
-	minorVer uint16
-	majorVer uint16
-	headers  []Header
+	reader     *bufio.Reader
+	passphrase string
+	filename   string
+	baseSign   []byte
+	scndSign   []byte
+	minorVer   uint16
+	majorVer   uint16
+	headers    []Header
 }
 
 // Header defines the KDBX file header.
@@ -182,6 +184,12 @@ func (k *KDBX) InnerRandomStreamID() uint32 {
 // - KeePass file format version 3.x is `0x67`
 func (k *KDBX) FormatVersion() byte {
 	return k.scndSign[0]
+}
+
+// SetPassphrase defines the database main password.
+func (k *KDBX) SetPassphrase(password string) {
+	out := sha256.Sum256([]byte(password))
+	k.passphrase = password[0 : len(out)-1]
 }
 
 // Decode reads and processes the KDBX file.
