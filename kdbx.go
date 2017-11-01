@@ -311,6 +311,10 @@ func (k *KDBX) decodeFileHeaders() error {
 			return errors.New("kdbx.header_data;\x20" + err.Error())
 		}
 
+		if h.id > headersLen {
+			return errors.New("kdbx.header_id; unknown header id")
+		}
+
 		k.headers[h.id] = h /* header index should be static */
 
 		if h.id == endHeaderUUID && bytes.Equal(h.data, endHeaderData) {
