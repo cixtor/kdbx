@@ -61,7 +61,7 @@ var endHeaderData = []byte{0x0d, 0x0a, 0x0d, 0x0a}
 // KDBX defines the main library data structure.
 type KDBX struct {
 	reader     *bufio.Reader
-	passphrase string
+	passphrase []byte
 	filename   string
 	baseSign   []byte
 	scndSign   []byte
@@ -187,9 +187,9 @@ func (k *KDBX) FormatVersion() byte {
 }
 
 // SetPassphrase defines the database main password.
-func (k *KDBX) SetPassphrase(password string) {
-	out := sha256.Sum256([]byte(password))
-	k.passphrase = password[0 : len(out)-1]
+func (k *KDBX) SetPassphrase(password []byte) {
+	hash := sha256.Sum256(password)
+	k.passphrase = hash[0:len(hash)]
 }
 
 // Decode reads and processes the KDBX file.
