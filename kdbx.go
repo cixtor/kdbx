@@ -228,6 +228,10 @@ func (k *KDBX) Decode() error {
 		return err
 	}
 
+	if err := k.decodeFileContent(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -324,4 +328,40 @@ func (k *KDBX) decodeFileHeaders() error {
 	}
 
 	return nil
+}
+
+func (k *KDBX) decodeFileContent() error {
+	database, err := k.decodeFileDatabase()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (k *KDBX) decodeFileDatabase() ([]byte, error) {
+	content, err := ioutil.ReadAll(k.reader)
+
+	if err != nil {
+		return nil, err
+	}
+
+	mode, err := k.buildDecrypter()
+
+	if err != nil {
+		return nil, err
+	}
+
+	database := make([]byte, len(content))
+	mode.CryptBlocks(database, content)
+
+	expected := k.StreamStartBytes()
+	provided := database[0:len(expected)]
+
+	if !bytes.Equal(expected, provided) {
+		return nil, errors.New("kdbx.content; invalid auth or corrupt database")
+	}
+
+	return database[len(expected):len(database)], nil
 }
