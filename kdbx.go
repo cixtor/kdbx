@@ -365,3 +365,41 @@ func (k *KDBX) decodeFileDatabase() ([]byte, error) {
 
 	return database[len(expected):len(database)], nil
 }
+
+func (k *KDBX) buildMasterKey() ([]byte, error) {
+	key, err := k.buildCompositeKey()
+
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := aes.NewCipher(k.TransformSeed())
+
+	if err != nil {
+		return nil, err
+	}
+
+	var iv []byte
+
+	tr := k.TransformRounds()
+
+	for i := uint64(0); i < tr; i++ {
+		iv = make([]byte, masterKeyLen)
+
+		c := cipher.NewCBCEncrypter(b, iv)
+		c.CryptBlocks(key[0:masterKeyLen], key[0:masterKeyLen])
+
+		c = cipher.NewCBCEncrypter(b, iv)
+		c.CryptBlocks(key[masterKeyLen:len(key)], key[masterKeyLen:len(key)])
+	}
+
+	/* [32]byte >>> []byte */
+	tmp := sha256.Sum256(key)
+	key = tmp[0:len(tmp)]
+
+	key = append(k.MasterSeed(), key...)
+	hsh := sha256.Sum256(key)
+	key = hsh[0:len(hsh)]
+
+	return key, nil
+}
