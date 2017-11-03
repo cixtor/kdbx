@@ -366,6 +366,16 @@ func (k *KDBX) decodeFileDatabase() ([]byte, error) {
 	return database[len(expected):len(database)], nil
 }
 
+func (k *KDBX) buildCompositeKey() ([]byte, error) {
+	hash := sha256.New()
+
+	if _, err := hash.Write(k.passphrase); err != nil {
+		return nil, err
+	}
+
+	return hash.Sum(nil), nil
+}
+
 func (k *KDBX) buildMasterKey() ([]byte, error) {
 	key, err := k.buildCompositeKey()
 
