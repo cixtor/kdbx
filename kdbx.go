@@ -376,6 +376,16 @@ func (k *KDBX) buildCipher() (cipher.Block, error) {
 	return aes.NewCipher(key)
 }
 
+func (k *KDBX) buildDecrypter() (cipher.BlockMode, error) {
+	b, err := k.buildCipher()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return cipher.NewCBCDecrypter(b, k.EncryptionIV()), nil
+}
+
 func (k *KDBX) buildCompositeKey() ([]byte, error) {
 	hash := sha256.New()
 
