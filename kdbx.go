@@ -31,9 +31,12 @@ package kdbx
 import (
 	"bufio"
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"io/ioutil"
 	"log"
 	"os"
 )
@@ -54,6 +57,9 @@ const sndSigXLen = 4
 
 // Number of supported header fields.
 const headersLen = 11
+
+// Number of bytes for the master key.
+const masterKeyLen = 16
 
 var endHeaderUUID = uint8(0x00) /* endheader id */
 var endHeaderData = []byte{0x0d, 0x0a, 0x0d, 0x0a}
