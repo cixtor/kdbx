@@ -31,10 +31,12 @@ package kdbx
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/xml"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -61,6 +63,9 @@ const headersLen = 11
 // Number of bytes for the master key.
 const masterKeyLen = 16
 
+// Determines if the database is compressed.
+const compressedFlag = 1
+
 var endHeaderUUID = uint8(0x00) /* endheader id */
 var endHeaderData = []byte{0x0d, 0x0a, 0x0d, 0x0a}
 
@@ -74,6 +79,7 @@ type KDBX struct {
 	minorVer   uint16
 	majorVer   uint16
 	headers    []Header
+	content    interface{}
 }
 
 // Header defines the KDBX file header.
@@ -337,17 +343,7 @@ func (k *KDBX) decodeFileHeaders() error {
 }
 
 func (k *KDBX) decodeFileContent() error {
-	database, err := k.decodeFileDatabase()
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (k *KDBX) decodeFileDatabase() ([]byte, error) {
-	content, err := ioutil.ReadAll(k.reader)
+	encrypted, err := ioutil.ReadAll(k.reader)
 
 	if err != nil {
 		return nil, err
@@ -359,8 +355,8 @@ func (k *KDBX) decodeFileDatabase() ([]byte, error) {
 		return nil, err
 	}
 
-	database := make([]byte, len(content))
-	mode.CryptBlocks(database, content)
+	database := make([]byte, len(encrypted))
+	mode.CryptBlocks(database, encrypted)
 
 	expected := k.StreamStartBytes()
 	provided := database[0:len(expected)]
@@ -369,7 +365,30 @@ func (k *KDBX) decodeFileDatabase() ([]byte, error) {
 		return nil, errors.New("kdbx.content; invalid auth or corrupt database")
 	}
 
-	return database[len(expected):len(database)], nil
+	return k.decodeFileContentXML(database[len(expected):len(database)])
+}
+
+func (k *KDBX) decodeFileContentXML(database []byte) error {
+	buf, err := k.decodeFileContentBlocks(database)
+
+	if err != nil {
+		return nil, err
+	}
+
+	b := bytes.NewBuffer(buf)
+	r, err := gzip.NewReader(b)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if err := r.Close(); err != nil {
+			log.Fatalln("kdbx.blocks;", err)
+		}
+	}()
+
+	return xml.NewDecoder(r).Decode(&k.content)
 }
 
 func (k *KDBX) buildCipher() (cipher.Block, error) {
