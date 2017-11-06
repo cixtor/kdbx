@@ -410,6 +410,10 @@ func (k *KDBX) decodeFileContentBlocks(database []byte) ([]byte, error) {
 	return result, nil
 }
 
+func (k *KDBX) isCompressed() bool {
+	return k.CompressionFlags() == compressedFlag
+}
+
 func (k *KDBX) buildCipher() (cipher.Block, error) {
 	key, err := k.buildMasterKey()
 
