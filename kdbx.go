@@ -10,6 +10,7 @@
 // the KeePass database is stored on a local file system (as opposed to cloud
 // storage).
 //
+// Ref: /usr/share/file/magic/keepass
 // Ref: https://en.wikipedia.org/wiki/KeePass
 //
 //   0000: 03 d9 a2 9a 67 fb 4b b5 01 00 03 00 02 10 00 31  |....g.K........1|
@@ -346,13 +347,13 @@ func (k *KDBX) decodeFileContent() error {
 	encrypted, err := ioutil.ReadAll(k.reader)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	mode, err := k.buildDecrypter()
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	database := make([]byte, len(encrypted))
@@ -362,7 +363,7 @@ func (k *KDBX) decodeFileContent() error {
 	provided := database[0:len(expected)]
 
 	if !bytes.Equal(expected, provided) {
-		return nil, errors.New("kdbx.content; invalid auth or corrupt database")
+		return errors.New("kdbx.content; invalid auth or corrupt database")
 	}
 
 	return k.decodeFileContentXML(database[len(expected):len(database)])
@@ -372,14 +373,14 @@ func (k *KDBX) decodeFileContentXML(database []byte) error {
 	buf, err := k.decodeFileContentBlocks(database)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	b := bytes.NewBuffer(buf)
 	r, err := gzip.NewReader(b)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	defer func() {
@@ -389,6 +390,24 @@ func (k *KDBX) decodeFileContentXML(database []byte) error {
 	}()
 
 	return xml.NewDecoder(r).Decode(&k.content)
+}
+
+func (k *KDBX) decodeFileContentBlocks(database []byte) ([]byte, error) {
+	var result []byte
+
+	for {
+		if len(database) == 0 {
+			break
+		}
+
+		if err := k.decodeFileContentBlock(database); err != nil {
+			if err == emptyBlock {
+				return result, nil
+			}
+		}
+	}
+
+	return result, nil
 }
 
 func (k *KDBX) buildCipher() (cipher.Block, error) {
