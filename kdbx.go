@@ -42,6 +42,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"time"
 )
 
 var baseSig = []byte{0x03, 0xd9, 0xa2, 0x9a}
@@ -89,7 +90,7 @@ type KDBX struct {
 	minorVer   uint16
 	majorVer   uint16
 	headers    []Header
-	content    interface{}
+	content    content
 }
 
 // Header defines the KDBX file header.
@@ -105,6 +106,142 @@ type Block struct {
 	hash   [32]byte
 	length uint32
 	data   []byte
+}
+
+type contentBool bool
+
+type contentUUID [16]byte
+
+type content struct {
+	XMLName xml.Name     `xml:"KeePassFile"`
+	Meta    *contentMeta `xml:"Meta"`
+	Root    *contentRoot `xml:"Root"`
+}
+
+type contentMeta struct {
+	Generator                  string           `xml:"Generator"`
+	HeaderHash                 string           `xml:"HeaderHash"`
+	DatabaseName               string           `xml:"DatabaseName"`
+	DatabaseNameChanged        *time.Time       `xml:"DatabaseNameChanged"`
+	DatabaseDescription        string           `xml:"DatabaseDescription"`
+	DatabaseDescriptionChanged *time.Time       `xml:"DatabaseDescriptionChanged"`
+	DefaultUserName            string           `xml:"DefaultUserName"`
+	DefaultUserNameChanged     *time.Time       `xml:"DefaultUserNameChanged"`
+	MaintenanceHistoryDays     string           `xml:"MaintenanceHistoryDays"`
+	Color                      string           `xml:"Color"`
+	MasterKeyChanged           *time.Time       `xml:"MasterKeyChanged"`
+	MasterKeyChangeRec         int64            `xml:"MasterKeyChangeRec"`
+	MasterKeyChangeForce       int64            `xml:"MasterKeyChangeForce"`
+	MemoryProtection           contentMemProtec `xml:"MemoryProtection"`
+	RecycleBinEnabled          contentBool      `xml:"RecycleBinEnabled"`
+	RecycleBinUUID             contentUUID      `xml:"RecycleBinUUID"`
+	RecycleBinChanged          *time.Time       `xml:"RecycleBinChanged"`
+	EntryTemplatesGroup        string           `xml:"EntryTemplatesGroup"`
+	EntryTemplatesGroupChanged *time.Time       `xml:"EntryTemplatesGroupChanged"`
+	HistoryMaxItems            int64            `xml:"HistoryMaxItems"`
+	HistoryMaxSize             int64            `xml:"HistoryMaxSize"`
+	LastSelectedGroup          string           `xml:"LastSelectedGroup"`
+	LastTopVisibleGroup        string           `xml:"LastTopVisibleGroup"`
+	Binaries                   []contentBinary  `xml:"Binaries"`
+	CustomData                 string           `xml:"CustomData"`
+}
+
+type contentMemProtec struct {
+	ProtectNotes    contentBool `xml:"ProtectNotes"`
+	ProtectPassword contentBool `xml:"ProtectPassword"`
+	ProtectTitle    contentBool `xml:"ProtectTitle"`
+	ProtectURL      contentBool `xml:"ProtectURL"`
+	ProtectUserName contentBool `xml:"ProtectUserName"`
+}
+
+type contentRoot struct {
+	Groups         []contentGroup             `xml:"Group"`
+	DeletedObjects []contentDeletedObjectData `xml:"DeletedObjects>DeletedObject"`
+}
+
+type contentBinary struct {
+	ID         int         `xml:"ID,attr"`
+	Content    []byte      `xml:",innerxml"`
+	Compressed contentBool `xml:"Compressed,attr"`
+}
+
+type contentGroup struct {
+	UUID                    contentUUID    `xml:"UUID"`
+	Name                    string         `xml:"Name"`
+	Notes                   string         `xml:"Notes"`
+	IconID                  int64          `xml:"IconID"`
+	Times                   contentTimes   `xml:"Times"`
+	IsExpanded              contentBool    `xml:"IsExpanded"`
+	DefaultAutoTypeSequence string         `xml:"DefaultAutoTypeSequence"`
+	EnableAutoType          string         `xml:"EnableAutoType"`
+	EnableSearching         string         `xml:"EnableSearching"`
+	LastTopVisibleEntry     string         `xml:"LastTopVisibleEntry"`
+	Entries                 []contentEntry `xml:"Entry,omitempty"`
+	Groups                  []contentGroup `xml:"Group,omitempty"`
+}
+
+type contentEntry struct {
+	UUID            contentUUID      `xml:"UUID"`
+	IconID          int64            `xml:"IconID"`
+	ForegroundColor string           `xml:"ForegroundColor"`
+	BackgroundColor string           `xml:"BackgroundColor"`
+	OverrideURL     string           `xml:"OverrideURL"`
+	Tags            string           `xml:"Tags"`
+	Times           contentTimes     `xml:"Times"`
+	Strings         []contentString  `xml:"String,omitempty"`
+	AutoType        contentAutoType  `xml:"AutoType"`
+	Histories       []contentHistory `xml:"History"`
+	Binaries        []contentBinRef  `xml:"Binary,omitempty"`
+}
+
+type contentTimes struct {
+	LastModificationTime *time.Time  `xml:"LastModificationTime"`
+	CreationTime         *time.Time  `xml:"CreationTime"`
+	LastAccessTime       *time.Time  `xml:"LastAccessTime"`
+	ExpiryTime           *time.Time  `xml:"ExpiryTime"`
+	Expires              contentBool `xml:"Expires"`
+	UsageCount           int64       `xml:"UsageCount"`
+	LocationChanged      *time.Time  `xml:"LocationChanged"`
+}
+
+type contentString struct {
+	Key   string       `xml:"Key"`
+	Value contentValue `xml:"Value"`
+}
+
+type contentValue struct {
+	content   string `xml:",chardata"`
+	Protected bool   `xml:"Protected,attr,omitempty"`
+}
+
+type contentAutoType struct {
+	Enabled                 bool                        `xml:"Enabled"`
+	DataTransferObfuscation int64                       `xml:"DataTransferObfuscation"`
+	Association             *contentAutoTypeAssociation `xml:"Association,omitempty"`
+}
+
+type contentAutoTypeAssociation struct {
+	Window            string `xml:"Window"`
+	KeystrokeSequence string `xml:"KeystrokeSequence"`
+}
+
+type contentDeletedObjectData struct {
+	XMLName      xml.Name    `xml:"DeletedObject"`
+	UUID         contentUUID `xml:"UUID"`
+	DeletionTime *time.Time  `xml:"DeletionTime"`
+}
+
+type contentHistory struct {
+	Entries []contentEntry `xml:"Entry"`
+}
+
+type contentBinRef struct {
+	Name  string             `xml:"Key"`
+	Value contentBinRefValue `xml:"Value"`
+}
+
+type contentBinRefValue struct {
+	ID int `xml:"Ref,attr"`
 }
 
 // New creates and returns a new instance of KDBX.
