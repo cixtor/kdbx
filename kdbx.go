@@ -67,6 +67,15 @@ const masterKeyLen = 16
 // Determines if the database is compressed.
 const compressedFlag = 1
 
+// Number of bytes for the XML blocks: Block ID.
+const blockIDLen = 4
+
+// Number of bytes for the XML blocks: Block Hash.
+const blockHashLen = 32
+
+// Number of bytes for the XML blocks: Block Data.
+const blockDataLen = 4
+
 var endHeaderUUID = uint8(0x00) /* endheader id */
 var endHeaderData = []byte{0x0d, 0x0a, 0x0d, 0x0a}
 
@@ -87,6 +96,14 @@ type KDBX struct {
 type Header struct {
 	id     uint8
 	length uint16
+	data   []byte
+}
+
+// Block defines the XML data portions.
+type Block struct {
+	id     uint32
+	hash   [32]byte
+	length uint32
 	data   []byte
 }
 
@@ -385,7 +402,7 @@ func (k *KDBX) decodeFileContentXML(database []byte) error {
 
 	defer func() {
 		if err := r.Close(); err != nil {
-			log.Fatalln("kdbx.blocks;", err)
+			log.Fatalln("kdbx.xml_blocks;", err)
 		}
 	}()
 
@@ -400,14 +417,64 @@ func (k *KDBX) decodeFileContentBlocks(database []byte) ([]byte, error) {
 			break
 		}
 
-		if err := k.decodeFileContentBlock(database); err != nil {
-			if err == emptyBlock {
-				return result, nil
-			}
+		block, err := k.decodeFileContentBlock(database)
+
+		if err != nil {
+			return result, err
 		}
+
+		/* xml end block */
+		if block.length == 0 {
+			return result, nil
+		}
+
+		result = append(result, block.data...)
+
+		database = database[k.blockTotalSize()+len(block.data) : len(database)]
 	}
 
 	return result, nil
+}
+
+func (k *KDBX) decodeFileContentBlock(database []byte) (Block, error) {
+	var b Block
+
+	total := k.blockTotalSize()
+
+	if len(database) < total {
+		return b, errors.New("kdbx.xml_block; too small")
+	}
+
+	var x int
+	var y int
+
+	y += blockIDLen
+	b.id = binary.LittleEndian.Uint32(database[x:y])
+
+	x += blockIDLen
+	y += blockHashLen
+	copy(b.hash[0:len(b.hash)], database[x:y])
+
+	x += blockHashLen
+	y += blockDataLen
+	b.length = binary.LittleEndian.Uint32(database[x:y])
+
+	if b.length == 0 {
+		return b, nil
+	}
+
+	if len(database)-total < int(b.length) {
+		return b, errors.New("kdbx.xml_block; too small")
+	}
+
+	b.data = database[total : total+int(b.length)]
+	expected := sha256.Sum256(b.data)
+
+	if !bytes.Equal(expected[0:len(expected)], b.hash[0:len(b.hash)]) {
+		return b, errors.New("kdbx.xml_block; corrupt")
+	}
+
+	return b, nil
 }
 
 func (k *KDBX) isCompressed() bool {
@@ -480,4 +547,8 @@ func (k *KDBX) buildMasterKey() ([]byte, error) {
 	key = hsh[0:len(hsh)]
 
 	return key, nil
+}
+
+func (k *KDBX) blockTotalSize() int {
+	return blockIDLen + blockHashLen + blockDataLen
 }
