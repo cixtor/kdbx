@@ -528,6 +528,11 @@ func (k *KDBX) decodeFileContent() error {
 }
 
 func (k *KDBX) decodeFileContentXML(database []byte) error {
+	if !k.isCompressed() {
+		r := bytes.NewReader(database)
+		return xml.NewDecoder(r).Decode(&k.content)
+	}
+
 	buf, err := k.decodeFileContentBlocks(database)
 
 	if err != nil {
