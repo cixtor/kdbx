@@ -36,6 +36,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/xml"
 	"errors"
@@ -76,6 +77,9 @@ const blockHashLen = 32
 
 // Number of bytes for the XML blocks: Block Data.
 const blockDataLen = 4
+
+// Number of bytes for the XML blocks: Block UUID.
+const blockUUIDLen = 16
 
 var endHeaderUUID = uint8(0x00) /* endheader id */
 var endHeaderData = []byte{0x0d, 0x0a, 0x0d, 0x0a}
@@ -688,4 +692,21 @@ func (k *KDBX) buildMasterKey() ([]byte, error) {
 
 func (k *KDBX) blockTotalSize() int {
 	return blockIDLen + blockHashLen + blockDataLen
+}
+
+func (u *contentUUID) UnmarshalText(src []byte) error {
+	dst := make([]byte, base64.StdEncoding.DecodedLen(len(src)))
+	length, err := base64.StdEncoding.Decode(dst, src)
+
+	if err != nil {
+		return err
+	}
+
+	if length != blockUUIDLen {
+		return errors.New("kdbx.xml_block; invalid block uuid")
+	}
+
+	copy((*u)[0:len(u)], dst[0:blockUUIDLen])
+
+	return nil
 }
