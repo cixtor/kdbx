@@ -345,7 +345,22 @@ func (k *KDBX) StreamStartBytes() []byte {
 // - 0x01: Arc4Variant
 // - 0x02: Salsa20
 func (k *KDBX) InnerRandomStreamID() uint32 {
-	return binary.LittleEndian.Uint32(k.headers[0x10].data)
+	return binary.LittleEndian.Uint32(k.headers[0x0a].data)
+}
+
+// IsLockedByNone checks if the passwords are obfuscated by ByNone.
+func (k *KDBX) IsLockedByNone() bool {
+	return k.InnerRandomStreamID() == 0x00
+}
+
+// IsLockedByArc4Variant checks if the passwords are obfuscated by ByArc4Variant.
+func (k *KDBX) IsLockedByArc4Variant() bool {
+	return k.InnerRandomStreamID() == 0x01
+}
+
+// IsLockedBySalsa20 checks if the passwords are obfuscated by BySalsa20.
+func (k *KDBX) IsLockedBySalsa20() bool {
+	return k.InnerRandomStreamID() == 0x02
 }
 
 // FormatVersion returns the version of the file format.
@@ -403,7 +418,7 @@ func (k *KDBX) Decode() error {
 		return err
 	}
 
-	return nil
+	return k.decodeProtectedEntries()
 }
 
 func (k *KDBX) decodeBaseSignature() error {
@@ -621,6 +636,22 @@ func (k *KDBX) decodeFileContentBlock(database []byte) (Block, error) {
 	}
 
 	return b, nil
+}
+
+func (k *KDBX) decodeProtectedEntries() error {
+	if k.IsLockedByNone() {
+		return nil
+	}
+
+	if k.IsLockedByArc4Variant() {
+		return nil
+	}
+
+	if k.IsLockedBySalsa20() {
+		return nil
+	}
+
+	return nil
 }
 
 func (k *KDBX) isCompressed() bool {
