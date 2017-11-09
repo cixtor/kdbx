@@ -214,7 +214,7 @@ type contentString struct {
 }
 
 type contentValue struct {
-	content   string `xml:",chardata"`
+	Content   string `xml:",chardata"`
 	Protected bool   `xml:"Protected,attr,omitempty"`
 }
 
@@ -714,4 +714,8 @@ func (u *contentUUID) UnmarshalText(src []byte) error {
 	copy((*u)[0:len(u)], dst[0:blockUUIDLen])
 
 	return nil
+}
+
+func (k *KDBX) Content() content {
+	return k.content
 }
