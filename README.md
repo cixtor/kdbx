@@ -18,4 +18,4 @@ ID     | DataType | Header Name           | Description
 `0x07` | `[]byte` | `EncryptionIV`        | defines the initialization vector of the cipher
 `0x08` | `[]byte` | `ProtectedStreamKey`  | used to obfuscate some fields of the decrypted file
 `0x09` | `[]byte` | `StreamStartBytes`    | portion of the decrypted database for verification
-`0x10` | `uint32` | `InnerRandomStreamID` | algorithm used for individual password obfuscation
+`0x0a` | `uint32` | `InnerRandomStreamID` | algorithm used for individual password obfuscation
